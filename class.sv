@@ -3,8 +3,8 @@ class base_subsystem;
   logic [31:0] data;
   logic [31:0] addr;
   bit write;
-  string amba_prot;
-  string pkg_type;
+  string amba_prot = "AXI4";
+  string pkg_type = "Burst";
 
   function new(logic [31:0] addr, logic [31:0] data);
     this.addr = addr;
@@ -12,6 +12,7 @@ class base_subsystem;
   endfunction
 endclass
 
+// create a child class called top_module
 class top_module extends base_subsystem;
   logic [3:0] id;
   logic [2:0] mode = 3;
@@ -23,8 +24,15 @@ class top_module extends base_subsystem;
     this id = id; // set the id 
     this mode = mode; // set the mode
   endfunction
-endclass
 
+  extern function void display_amba ();
+    
+endclass
+    
+function void top_module::display_amba ();
+  $display("%s", amba);
+endfunction
+    
 module tb;
 
   logic [31:0] data;
@@ -45,6 +53,9 @@ module tb;
     mode = 2;
     // instantiate the top_module class
     top1 = new (id,mode,offset,addr,data);
-    $display (top1.addr, top1.data, top1.id, top1.mode);
+    $display ("addr:%h, data:%h, id:%d, mode:%d",top1.addr, top1.data, top1.id, top1.mode);
   end
 endmodule
+
+
+      
