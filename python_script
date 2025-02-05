@@ -1,0 +1,35 @@
+import requests
+import base64
+
+# Replace these variables with your own information
+GITHUB_TOKEN = 'your_github_token'
+REPO_OWNER = 'JuanSync7'
+REPO_NAME = 'SystemVerilog'
+FILE_PATH = 'blob/main/a'
+COMMIT_MESSAGE = 'git spam'
+NEW_CONTENT = 'a'
+
+# Get the file's current content and SHA
+url = f'https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/{FILE_PATH}'
+headers = {'Authorization': f'token {GITHUB_TOKEN}'}
+response = requests.get(url, headers=headers)
+response_json = response.json()
+file_sha = response_json['sha']
+file_content = base64.b64decode(response_json['content']).decode('utf-8')
+
+# Update the file content
+updated_content = file_content + '\n' + NEW_CONTENT
+encoded_content = base64.b64encode(updated_content.encode('utf-8')).decode('utf-8')
+
+# Create the commit
+data = {
+    'message': COMMIT_MESSAGE,
+    'content': encoded_content,
+    'sha': file_sha
+}
+response = requests.put(url, headers=headers, json=data)
+
+if response.status_code == 200:
+    print('File updated and committed successfully.')
+else:
+    print('Failed to update the file:', response.json())
