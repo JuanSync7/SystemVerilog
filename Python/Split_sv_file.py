@@ -1,5 +1,33 @@
 #!/bin/usr/env python3
 
+def get_preprocessor_directives(verilog_code):
+    # Pre-process: Normalize line continuations (\) for multi-line defines
+    normalized_code = re.sub(r'\\\s*\n', ' ', verilog_code)  # Join lines ending with backslash
+
+    define_pattern = r'''
+        (`define\s+)                    # Macro directive
+        (\w+)                           # Capture macro name (group 1)
+        (?:                             # Optional value part:
+            \s+                         # Whitespace before value
+            (                           # Capture group 2 for value:
+                (?:                     # Non-capturing group:
+                    (?!\s*(?:`\w+|;|/\*|//|\n|$))  # Negative lookahead for terminators
+                    .       # Match any character
+                )*                      # Repeat until terminator
+            )
+        )?                              # Value is optional
+        (?=\s*(?:`\w+|;|/\*|//|\n|$))  # Positive lookahead for terminator
+    '''
+    include_pattern = r'`include\s+"([^"]+)"'
+    
+    defines = re.findall(define_pattern,normalized_code,re.VERBOSE | re.DOTALL)
+    cleaned_code = re.sub(define_pattern,'',normalized_code,0,re.VERBOSE | re.DOTALL)
+
+    includes = re.findall(include_pattern, normalized_code,re.VERBOSE | re.DOTALL)
+    cleaned_code = re.sub(include_pattern,'',cleaned_code,0,re.VERBOSE | re.DOTALL)
+    cleaned_code = re.sub(r'''\r''','',cleaned_code,0,re.VERBOSE | re.DOTALL)
+    
+    
 def split_sv_file(file_path):
     """
     Splits a SystemVerilog file into logical segments using ';' as a delimiter,
