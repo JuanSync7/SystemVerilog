@@ -1,3 +1,5 @@
+#!/bin/usr/env python3
+
 def split_sv_file(file_path):
     """
     Splits a SystemVerilog file into logical segments using ';' as a delimiter,
