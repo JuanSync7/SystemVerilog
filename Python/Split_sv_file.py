@@ -1,8 +1,31 @@
 #!/bin/usr/env python3
 
+def global_dictionary():
+    global include_filelist = []
+    global define_macro = {}
+    global signal_value = {}
+    
+
 def get_preprocessor_directives(verilog_code):
+    
+    global include_filelist
+    global define_macro
+    
     # Pre-process: Normalize line continuations (\) for multi-line defines
     normalized_code = re.sub(r'\\\s*\n', ' ', verilog_code)  # Join lines ending with backslash
+    
+    
+    preprocessor_directives = [
+        ("MACRO_DEF",r'''`(define|undef|ifdef|ifndef|else|elsif|endif)'''),
+        ("INCLUDE_FILE", r'(`include)'),
+        ("TIME_CONTROL", r'`(timescale|delay_mode_[/w]+)'),
+        ("SIM_CONTROL", r'`(resetall|celldefine|endcelldefine|unconnected_drive|nounconnected_drive)'),
+        ("ASSERT_COV", r'`(default_nettype|line|pragma)'),
+        ("ADV_DIRECTIVES",r'`(begin_keywords|end_keywords|protect|endprotect|FILE|LINE)')
+    ]
+    preprocessor_directives_pattern = r'''(\b`[a-zA-Z_$][/w]*\s+)''' 
+
+    all_preprocessor = re.findall(preprocessor_directives_pattern, normalized_code, re.VERBOSE | re.DOTALL)
 
     define_pattern = r'''
         (`define\s+)                    # Macro directive
@@ -20,10 +43,16 @@ def get_preprocessor_directives(verilog_code):
     '''
     include_pattern = r'`include\s+"([^"]+)"'
     
+    timescale_pattern = r'`timescale'
     defines = re.findall(define_pattern,normalized_code,re.VERBOSE | re.DOTALL)
     cleaned_code = re.sub(define_pattern,'',normalized_code,0,re.VERBOSE | re.DOTALL)
 
     includes = re.findall(include_pattern, normalized_code,re.VERBOSE | re.DOTALL)
+    
+    # append each of the include file into the include filelist
+    for include in includes:
+        include_filelist.append(include)
+        
     cleaned_code = re.sub(include_pattern,'',cleaned_code,0,re.VERBOSE | re.DOTALL)
     cleaned_code = re.sub(r'''\r''','',cleaned_code,0,re.VERBOSE | re.DOTALL)
     
@@ -61,6 +90,11 @@ def split_sv_file(file_path):
         if not line: # if it is an empty line 
             continue
 
+
+        preprocessing_block = re.match(r'\b`(ifdef|ifndef|else|elsif|endif)\b',line)
+        
+        if preprocessing_block:
+            
         # Check for procedural block starts (always, initial, task, function)
         procedural_block = re.match(r'\b(always|always_ff|always_comb|always_ff|initial|task|function)\b', line)
         generate_block = re.match(r'\b(generate|endgenerate)\b',line)
